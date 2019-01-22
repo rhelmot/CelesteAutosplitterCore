@@ -63,7 +63,7 @@ enum PointerVersion {
 
 struct Celeste {
     version: PointerVersion,
-    base: Address,
+    base: u32,
     last_show_input_ui: bool,
     last_completed: bool,
     il_splits: bool,
@@ -71,20 +71,19 @@ struct Celeste {
 }
 
 impl Celeste {
-    fn resolve_offsets(&self, offsets: &[i64]) -> Address {
-        let Address(mut address) = self.base;
+    fn resolve_offsets(&self, offsets: &[i32]) -> Address {
+        let mut address = self.base;
         let mut offsets = offsets.iter().cloned().peekable();
-        // TODO: Assumes Celeste is 64-bit.
         while let Some(offset) = offsets.next() {
-            address = (address as i64).wrapping_add(offset) as u64;
+            address = (address as u32).wrapping_add(offset as u32);
             if offsets.peek().is_some() {
-                address = unsafe { asl::read_val(Address(address)) };
+                address = unsafe { asl::read_val(Address(address as u64)) };
             }
         }
-        Address(address)
+        Address(address as u64)
     }
 
-    fn read<T: Plain + Sized>(&self, offsets: &[i64]) -> T {
+    fn read<T: Plain + Sized>(&self, offsets: &[i32]) -> T {
         let address = self.resolve_offsets(offsets);
         unsafe { asl::read_val(address) }
     }
@@ -232,7 +231,6 @@ impl Celeste {
         chapter_area: Area,
         level: &[u16],
         completed: bool,
-        elapsed: f64,
     ) -> bool {
         if !self.exiting_chapter {
             let not_in_credits = if chapter_area == Area::TheSummit {
@@ -252,7 +250,7 @@ impl Celeste {
 }
 
 fn find_base() -> Option<Celeste> {
-    const POTENTIAL_SIGNATURES: [(PointerVersion, &str, i64); 3] = [
+    const POTENTIAL_SIGNATURES: [(PointerVersion, &str, i32); 3] = [
         (
             PointerVersion::Xna,
             "83C604F30F7E06660FD6078BCBFF15????????8D15",
@@ -272,8 +270,7 @@ fn find_base() -> Option<Celeste> {
 
     for &(version, signature, offset) in &POTENTIAL_SIGNATURES {
         if let Some(Address(address)) = asl::scan_signature(signature) {
-            // TODO: Assumes Celeste is 64-bit.
-            let address = (address as i64).wrapping_add(offset) as u64;
+            let address = (address as u32).wrapping_add(offset as u32) as u64;
             let base = unsafe { asl::read_val(Address(address)) };
             return Some(Celeste {
                 version,
@@ -312,20 +309,17 @@ pub extern "C" fn should_start() -> bool {
             && state.last_show_input_ui
             && state.menu_type() == Menu::FileSelect as i32;
         state.last_show_input_ui = show_input_ui;
-        should_start
-    } else {
-        false
+        if should_start {
+            CURRENT_SPLIT.store(0, Ordering::Relaxed);
+            return true;
+        }
     }
+    false
 }
 
 #[no_mangle]
 pub extern "C" fn should_split() -> bool {
     if let Some(mut state) = state() {
-        let elapsed = if state.il_splits {
-            state.level_time()
-        } else {
-            state.game_time()
-        };
         let completed = state.chapter_completed();
         let area_id = state.area_id();
         // TODO: addAmount
@@ -340,42 +334,35 @@ pub extern "C" fn should_split() -> bool {
                 Area::Prologue,
                 &level_name,
                 completed,
-                elapsed,
             ),
             SplitType::Prologue => {
-                state.chapter_split(area_id, Area::Prologue, &level_name, completed, elapsed)
+                state.chapter_split(area_id, Area::Prologue, &level_name, completed)
             }
             SplitType::Chapter1 => {
-                state.chapter_split(area_id, Area::ForsakenCity, &level_name, completed, elapsed)
+                state.chapter_split(area_id, Area::ForsakenCity, &level_name, completed)
             }
             SplitType::Chapter2 => {
-                state.chapter_split(area_id, Area::OldSite, &level_name, completed, elapsed)
+                state.chapter_split(area_id, Area::OldSite, &level_name, completed)
             }
-            SplitType::Chapter3 => state.chapter_split(
-                area_id,
-                Area::CelestialResort,
-                &level_name,
-                completed,
-                elapsed,
-            ),
+            SplitType::Chapter3 => {
+                state.chapter_split(area_id, Area::CelestialResort, &level_name, completed)
+            }
             SplitType::Chapter4 => {
-                state.chapter_split(area_id, Area::GoldenRidge, &level_name, completed, elapsed)
+                state.chapter_split(area_id, Area::GoldenRidge, &level_name, completed)
             }
             SplitType::Chapter5 => {
-                state.chapter_split(area_id, Area::MirrorTemple, &level_name, completed, elapsed)
+                state.chapter_split(area_id, Area::MirrorTemple, &level_name, completed)
             }
             SplitType::Chapter6 => {
-                state.chapter_split(area_id, Area::Reflection, &level_name, completed, elapsed)
+                state.chapter_split(area_id, Area::Reflection, &level_name, completed)
             }
             SplitType::Chapter7 => {
-                state.chapter_split(area_id, Area::TheSummit, &level_name, completed, elapsed)
+                state.chapter_split(area_id, Area::TheSummit, &level_name, completed)
             }
             SplitType::Epilogue => {
-                state.chapter_split(area_id, Area::Epilogue, &level_name, completed, elapsed)
+                state.chapter_split(area_id, Area::Epilogue, &level_name, completed)
             }
-            SplitType::Chapter8 => {
-                state.chapter_split(area_id, Area::Core, &level_name, completed, elapsed)
-            }
+            SplitType::Chapter8 => state.chapter_split(area_id, Area::Core, &level_name, completed),
             SplitType::Chapter1Checkpoint1 => {
                 area_id == Area::ForsakenCity as i32
                     && level_name
@@ -556,8 +543,28 @@ pub extern "C" fn should_split() -> bool {
 
         if should_split {
             state.exiting_chapter = false;
+            CURRENT_SPLIT.fetch_add(1, Ordering::Relaxed);
             return true;
         }
     }
     false
+}
+
+#[no_mangle]
+pub extern "C" fn is_loading() -> bool {
+    true
+}
+
+#[no_mangle]
+pub extern "C" fn game_time() -> f64 {
+    if let Some(mut state) = state() {
+        let elapsed = if state.il_splits {
+            state.level_time()
+        } else {
+            state.game_time()
+        };
+        elapsed
+    } else {
+        std::f64::NAN
+    }
 }
