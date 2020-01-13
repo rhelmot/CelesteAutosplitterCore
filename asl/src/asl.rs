@@ -25,6 +25,12 @@ mod sys {
         pub fn set_tick_rate(rate: f64);
         pub fn print_message(text_ptr: *const u8, text_len: usize);
         pub fn read_into_buf(address: Address, buf: *mut u8, buf_len: usize);
+        pub fn set_variable(
+            key_ptr: *const u8,
+            key_len: usize,
+            value_ptr: *const u8,
+            value_len: usize,
+        );
     }
 }
 
@@ -131,14 +137,14 @@ pub fn read_into_buf(address: Address, buf: &mut [u8]) {
     unsafe { sys::read_into_buf(address, buf.as_mut_ptr(), buf.len()) }
 }
 
+pub fn set_variable(key: &str, value: &str) {
+    unsafe { sys::set_variable(key.as_ptr(), key.len(), value.as_ptr(), value.len()) }
+}
+
 pub unsafe fn read_val<T>(address: Address) -> T {
-    let mut val = mem::uninitialized();
-    sys::read_into_buf(
-        address,
-        (&mut val) as *mut T as *mut u8,
-        mem::size_of::<T>(),
-    );
-    val
+    let mut val = mem::MaybeUninit::<T>::uninit();
+    sys::read_into_buf(address, val.as_mut_ptr().cast(), mem::size_of::<T>());
+    val.assume_init()
 }
 
 pub trait ASLState

@@ -6,8 +6,8 @@ mod game_types;
 use {
     crate::game_types::{Area, AreaMode, Menu, SplitType},
     asl::{ASLState, Address},
-    parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     plain::Plain,
+    static_locks::{MappedMutexGuard, Mutex, MutexGuard},
     std::sync::atomic::{AtomicUsize, Ordering},
 };
 
@@ -557,7 +557,9 @@ pub extern "C" fn is_loading() -> bool {
 
 #[no_mangle]
 pub extern "C" fn game_time() -> f64 {
-    if let Some(mut state) = state() {
+    if let Some(state) = state() {
+        asl::set_variable("Strawberries", &state.strawberries().to_string());
+        asl::set_variable("Level Timer", &format!("{:.2}s", state.level_time()));
         let elapsed = if state.il_splits {
             state.level_time()
         } else {
