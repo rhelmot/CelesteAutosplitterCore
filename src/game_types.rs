@@ -9,8 +9,6 @@ pub struct Settings {
 
     /// General Splits
     _general_splits: Title,
-    /// Manual Split (Not Automatic)
-    pub manual: bool,
     /// Any Chapter (Complete)
     pub chapter: bool,
     /// Level (On Enter)

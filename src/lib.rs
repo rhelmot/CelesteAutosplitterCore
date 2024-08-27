@@ -13,26 +13,50 @@ struct Celeste {
     last_completed: bool,
     exiting_chapter: bool,
     last_level: String,
+    reset_level: bool,
 }
 
 impl Celeste {
-    fn read<T: Pod>(&self, address: u64) -> T {
-        self.process.read(address).unwrap()
+    fn sanity_check(&self) -> bool {
+        if self.process.read::<u32>(self.asi_base + 0x14).ok() != Some(0) {
+            return false;
+        }
+        if let Some(ptr) = self.process.read::<u32>(self.asi_base + 0x00).ok() {
+            if ptr == 0 {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn read<T: Pod>(&self, address: u64) -> Option<T> {
+        self.process.read(address).ok()
+    }
+
+    fn readbool(&self, address: u64) -> Option<bool> {
+        self.process.read::<u8>(address).map(|x| x == 1).ok()
     }
 
     fn chapter_completed(&self) -> bool {
-        self.read::<u8>(self.asi_base + 0x12) != 0
+        self.readbool(self.asi_base + 0x12).unwrap_or(false)
+    }
+
+    fn level_name_init(&self) -> Option<String> {
+        let level_ptr = self.read::<u64>(self.asi_base)?;
+        if level_ptr == 0 {
+            return None;
+        }
+        let size = self.read::<u32>(level_ptr + 0x10)?;
+        if size > 512 {
+            return None;
+        }
+        let mut buffer = vec![0u16; size as usize];
+        self.process.read_into_slice(level_ptr + 0x14, &mut buffer).ok()?;
+        String::from_utf16(&buffer).ok()
     }
 
     fn level_name(&self) -> String {
-        let level_ptr = self.read::<u64>(self.asi_base);
-        if level_ptr == 0 {
-            return "".to_owned();
-        }
-        let size = self.read::<u32>(level_ptr + 0x10);
-        let mut buffer = vec![0u16; size as usize];
-        self.process.read_into_slice(level_ptr + 0x14, &mut buffer).unwrap();
-        return String::from_utf16(&buffer).unwrap();
+        self.level_name_init().unwrap_or_else(|| "".to_owned())
     }
 
     fn area_id_fallible(&self) -> Result<i32, Error> {
@@ -40,47 +64,47 @@ impl Celeste {
     }
 
     fn area_id(&self) -> i32 {
-        self.area_id_fallible().unwrap()
+        self.area_id_fallible().unwrap_or(-1)
     }
 
     fn area_difficulty(&self) -> i32 {
-        self.read(self.asi_base + 0xc)
+        self.read(self.asi_base + 0xc).unwrap_or(-1)
     }
 
     fn chapter_started(&self) -> bool {
-        self.read::<u8>(self.asi_base + 0x11) != 0
+        self.readbool(self.asi_base + 0x11).unwrap_or(false)
     }
 
     fn game_time(&self) -> Duration {
-        Duration::milliseconds(self.read::<i64>(self.asi_base + 0x28) / 10000)
+        Duration::milliseconds(self.read::<i64>(self.asi_base + 0x28).unwrap_or(0) / 10000)
     }
 
     fn level_time(&self) -> Duration {
-        Duration::milliseconds(self.read::<i64>(self.asi_base + 0x18) / 10000)
+        Duration::milliseconds(self.read::<i64>(self.asi_base + 0x18).unwrap_or(0) / 10000)
     }
 
     fn file_strawberries(&self) -> i32 {
-        self.read(self.asi_base + 0x30)
+        self.read(self.asi_base + 0x30).unwrap_or(0)
     }
 
     fn chapter_strawberries(&self) -> i32 {
-        self.read(self.asi_base + 0x20)
+        self.read(self.asi_base + 0x20).unwrap_or(0)
     }
 
     fn file_cassettes(&self) -> i32 {
-        self.read(self.asi_base + 0x34)
+        self.read(self.asi_base + 0x34).unwrap_or(0)
     }
 
     fn file_hearts(&self) -> i32 {
-        self.read(self.asi_base + 0x38)
+        self.read(self.asi_base + 0x38).unwrap_or(0)
     }
 
     fn chapter_cassette(&self) -> bool {
-        self.read::<u8>(self.asi_base + 0x24) != 0
+        self.readbool(self.asi_base + 0x24).unwrap_or(false)
     }
 
     fn chapter_heart(&self) -> bool {
-        self.read::<u8>(self.asi_base + 0x25) != 0
+        self.readbool(self.asi_base + 0x25).unwrap_or(false)
     }
 
     fn chapter_split(
@@ -93,7 +117,7 @@ impl Celeste {
     ) -> bool {
         if !self.exiting_chapter {
             let not_in_credits = if chapter_area == Area::TheSummit {
-                !level.starts_with("credits") // TODO: May need to be case insensitive
+                !level.starts_with("credits")
             } else {
                 true
             };
@@ -108,70 +132,70 @@ impl Celeste {
     }
 }
 
-fn class_field_offset(process: &Process, klass: u64, name: &str) -> u64 {
-    let class_kind = process.read::<u8>(klass + 0x24).unwrap() & 7;
+fn class_field_offset(process: &Process, klass: u64, name: &str) -> Option<u64> {
+    let class_kind = process.read::<u8>(klass + 0x24).ok()? & 7;
     if class_kind == 3 {
-        return class_field_offset(process, process.read::<u64>(process.read::<u64>(klass + 0xe0).unwrap()).unwrap(), name);
+        return class_field_offset(process, process.read::<u64>(process.read::<u64>(klass + 0xe0).ok()?).ok()?, name);
     }
     if class_kind != 1 && class_kind != 2 {
         panic!();
     }
 
-    let num_fields = process.read::<i32>(klass + 0xf0).unwrap();
-    let fields_ptr = process.read::<u64>(klass + 0x90).unwrap();
+    let num_fields = process.read::<i32>(klass + 0xf0).ok()?;
+    let fields_ptr = process.read::<u64>(klass + 0x90).ok()?;
 
     let mut fields_buf = vec![0u64; num_fields as usize * 4];
-    process.read_into_slice(fields_ptr, &mut fields_buf).unwrap();
+    process.read_into_slice(fields_ptr, &mut fields_buf).ok()?;
 
     for arr in fields_buf.chunks(4) {
         let field_name_ptr = arr[1];
         let field_offset = arr[3] & 0xffff_ffff;
-        if process.read::<ArrayCString::<256>>(field_name_ptr).unwrap().matches(name) {
-            return field_offset;
+        if process.read::<ArrayCString::<256>>(field_name_ptr).ok()?.matches(name) {
+            return Some(field_offset);
         }
     }
-    unreachable!();
+    None
 }
 
 
-fn lookup_class(process: &Process, class_cache: u64, name: &str) -> u64 {
-    let celeste_class_cache_table = process.read::<u32>(class_cache + 0x20).unwrap();
-    let hash_table_size = process.read::<u32>(class_cache + 0x18).unwrap();
+fn lookup_class(process: &Process, class_cache: u64, name: &str) -> Option<u64> {
+    let celeste_class_cache_table = process.read::<u32>(class_cache + 0x20).ok()?;
+    let hash_table_size = process.read::<u32>(class_cache + 0x18).ok()?;
     for bucket in 0..hash_table_size {
-        let mut klass = process.read::<u64>(celeste_class_cache_table + 8*bucket).unwrap();
+        let mut klass = process.read::<u64>(celeste_class_cache_table + 8*bucket).ok()?;
         while klass != 0 {
-            let current_name_ptr = process.read::<u64>(klass + 0x40).unwrap();
-            let name_arr = process.read::<ArrayCString<128>>(current_name_ptr).unwrap();
+            let current_name_ptr = process.read::<u64>(klass + 0x40).ok()?;
+            let name_arr = process.read::<ArrayCString<128>>(current_name_ptr).ok()?;
             if name_arr.matches(name) {
-                return klass;
+                return Some(klass);
             }
-            klass = process.read::<u64>(klass + 0xf8).unwrap();
+            klass = process.read::<u64>(klass + 0xf8).ok()?;
         }
     }
-    unreachable!();
+    None
 }
 
-fn class_static_fields(process: &Process, klass: u64) -> u64 {
-    let runtime_info = process.read::<u64>(klass + 0xc8).unwrap();
-    let celeste_vtable = process.read::<u64>(runtime_info + 8).unwrap();
-    let vtable_size = process.read::<u32>(klass + 0x54).unwrap() as u64;
-    process.read(celeste_vtable + 64 + vtable_size * 8).unwrap()
+fn class_static_fields(process: &Process, klass: u64) -> Option<u64> {
+    let runtime_info = process.read::<u64>(klass + 0xc8).ok()?;
+    let celeste_vtable = process.read::<u64>(runtime_info + 8).ok()?;
+    let vtable_size = process.read::<u32>(klass + 0x54).ok()? as u64;
+    process.read(celeste_vtable + 64 + vtable_size * 8).ok()
 }
 
-fn instance_class(process: &Process, instance: u64) -> u64 {
-    process.read(process.read::<u64>(instance).unwrap() & 0xffff_ffff_ffff_fffe).unwrap()
+fn instance_class(process: &Process, instance: u64) -> Option<u64> {
+    process.read(process.read::<u64>(instance).ok()? & 0xffff_ffff_ffff_fffe).ok()
 }
 
-fn field<T: Pod>(process: &Process, instance: u64, name: &str) -> T {
-    let klass = instance_class(process, instance);
-    let offset = class_field_offset(process, klass, name);
-    process.read(offset + instance).unwrap()
+fn field<T: Pod>(process: &Process, instance: u64, name: &str) -> Option<T> {
+    let klass = instance_class(process, instance)?;
+    let offset = class_field_offset(process, klass, name)?;
+    process.read(offset + instance).ok()
 }
 
-fn static_field<T: Pod>(process: &Process, klass: u64, name: &str) -> T {
-    let offset = class_field_offset(process, klass, name);
-    let static_ptr = class_static_fields(process, klass);
-    process.read(offset + static_ptr).unwrap()
+fn static_field<T: Pod>(process: &Process, klass: u64, name: &str) -> Option<T> {
+    let offset = class_field_offset(process, klass, name)?;
+    let static_ptr = class_static_fields(process, klass)?;
+    process.read(offset + static_ptr).ok()
 }
 
 fn find_base() -> Option<Celeste> {
@@ -190,30 +214,30 @@ fn find_base() -> Option<Celeste> {
     }
 
     let celeste_domain = if second_domain != 0 {
-        print_limited::<128>(&format_args!("Connected to {} (2)", second_domain_name.unwrap().validate_utf8().unwrap()));
+        print_limited::<128>(&format_args!("Connected to {} (domain 2)", second_domain_name.unwrap().validate_utf8().unwrap()));
         second_domain
     } else {
-        print_limited::<128>(&format_args!("Connected to {} (1)", first_domain_name.unwrap().validate_utf8().unwrap()));
+        print_limited::<128>(&format_args!("Connected to {} (domain 1)", first_domain_name.unwrap().validate_utf8().unwrap()));
         first_domain
     };
 
-    let celeste_assembly = process.read::<u64>(celeste_domain + 0xd0).unwrap();
-    let celeste_image = process.read::<u64>(celeste_assembly + 0x60).unwrap();
+    let celeste_assembly = process.read::<u64>(celeste_domain + 0xd0).ok()?;
+    let celeste_image = process.read::<u64>(celeste_assembly + 0x60).ok()?;
     let class_cache = celeste_image + 1216;
 
-    let celeste_class = lookup_class(&process, class_cache, "Celeste");
-    let celeste_obj = static_field::<u64>(&process, celeste_class, "Instance");
-    let autosplitter_obj = field::<u64>(&process, celeste_obj, "AutoSplitterInfo");
+    let celeste_class = lookup_class(&process, class_cache, "Celeste")?;
+    let celeste_obj = static_field::<u64>(&process, celeste_class, "Instance")?;
+    let autosplitter_obj = field::<u64>(&process, celeste_obj, "AutoSplitterInfo")? + 0x10;
 
     let settings = Settings::register();
-    pause_game_time();
     return Some(Celeste {
         process,
         settings,
-        asi_base: autosplitter_obj + 0x10,
+        asi_base: autosplitter_obj,
         last_completed: false,
         exiting_chapter: false,
         last_level: "".to_owned(),
+        reset_level: false,
     });
 }
 
@@ -234,16 +258,20 @@ pub extern "C" fn update() {
 
 fn update_inner() -> bool {
     if let Some(mut state) = state() {
-        let Ok(area_id) = state.area_id_fallible() else {
+        if !state.sanity_check() {
             return true;
-        };
+        }
+        let area_id = state.area_id();
         state.settings.update();
         let time = game_time(&mut state);
         set_game_time(time);
-        if time <= Duration::milliseconds(17) && area_id != -1 {
+        let reset_level = time >= Duration::milliseconds(0) && time <= Duration::milliseconds(100) && area_id >= 0 && area_id < 256 && state.level_name() != "";
+        if reset_level && !state.reset_level {
             reset();
             start();
+            pause_game_time();
         }
+        state.reset_level = reset_level;
         if should_split(&mut state) {
             split()
         }
@@ -254,7 +282,6 @@ fn update_inner() -> bool {
 fn should_split(state: &mut Celeste) -> bool {
     let completed = state.chapter_completed();
     let area_id = state.area_id();
-    // TODO: addAmount
     let level_name = state.level_name();
     set_variable("Level", &level_name);
     let level_name = if level_name == state.last_level {
@@ -408,14 +435,9 @@ fn should_split(state: &mut Celeste) -> bool {
     false
 }
 
-#[no_mangle]
-pub extern "C" fn is_loading() -> bool {
-    true
-}
-
 fn game_time(state: &mut Celeste) -> Duration {
     set_variable("Strawberries", &state.file_strawberries().to_string());
-    set_variable("Level Timer", &format!("{:.2}s", state.level_time()));
+    set_variable("Level Timer", &format!("{:.2}", state.level_time()));
     let elapsed = if state.settings.level_time {
         state.level_time()
     } else {
