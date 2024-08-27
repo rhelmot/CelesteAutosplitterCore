@@ -1,19 +1,18 @@
 [package]
-name = "celeste-auto-splitter"
+name = "celeste_autosplitter"
 version = "0.1.0"
-authors = ["Christopher Serr <christopher.serr@gmail.com>"]
-edition = "2018"
+authors = ["Audrey Dutcher <audrey@rhelmot.io>"]
+edition = "2021"
 
 [dependencies]
-asl = { path = "asl" }
-plain = "0.2.3"
+asr = { git = "https://github.com/LiveSplit/asr", features = ["integer-vars", "unity", "derive"] }
+bytemuck = "1.13.1"
 static_locks = "0.1.0"
 wstr = "0.2.0"
 
 [lib]
-name = "celeste"
+name = "celeste_autosplitter"
 crate-type = ["cdylib"]
 
 [profile.release]
 lto = true
-panic = "abort"

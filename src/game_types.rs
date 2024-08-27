@@ -1,121 +1,139 @@
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub enum SplitType {
+use asr::settings::{gui::Title, Gui};
+
+#[derive(Gui)]
+pub struct Settings {
+    /// General Settings
+    _general_settings: Title,
+    /// Use chapter timer (as opposed to file timer)
+    pub level_time: bool,
+
+    /// General Splits
+    _general_splits: Title,
     /// Manual Split (Not Automatic)
-    Manual,
+    pub manual: bool,
     /// Any Chapter (Complete)
-    ChapterA,
+    pub chapter: bool,
     /// Level (On Enter)
-    LevelEnter,
+    pub level_enter: bool,
     /// Level (On Exit)
-    LevelExit,
+    pub level_exit: bool,
+
+    /// Chapter Splits
+    _chapter_splits: Title,
     /// Prologue (Complete)
-    Prologue,
-    /// Chapter 1 - Crossing (A) / Contraption (B) (CP 1)
-    Chapter1Checkpoint1,
-    /// Chapter 1 - Chasm (A) / Scrap Pit (B) (CP 2)
-    Chapter1Checkpoint2,
+    pub prologue: bool,
     /// Chapter 1 - Forsaken City A/B/C (Complete)
-    Chapter1,
-    /// Chapter 2 - Intervention (A) / Combination Lock (B) (CP 1)
-    Chapter2Checkpoint1,
-    /// Chapter 2 - Awake (A) / Dream Altar (B) (CP 2)
-    Chapter2Checkpoint2,
+    pub chapter1: bool,
     /// Chapter 2 - Old Site A/B/C (Complete)
-    Chapter2,
-    /// Chapter 3 - Huge Mess (A) / Staff Quarters (B) (CP 1)
-    Chapter3Checkpoint1,
-    /// Chapter 3 - Elevator Shaft (A) / Library (B) (CP 2)
-    Chapter3Checkpoint2,
-    /// Chapter 3 - Presidential Suite (A) / Rooftop (B) (CP 3)
-    Chapter3Checkpoint3,
+    pub chapter2: bool,
     /// Chapter 3 - Celestial Resort A/B/C (Complete)
-    Chapter3,
-    /// Chapter 4 - Shrine (A) / Stepping Stones (B) (CP 1)
-    Chapter4Checkpoint1,
-    /// Chapter 4 - Old Trail (A) / Gusty Canyon (B) (CP 2)
-    Chapter4Checkpoint2,
-    /// Chapter 4 - Cliff Face (A) / Eye Of The Storm (B) (CP 3)
-    Chapter4Checkpoint3,
+    pub chapter3: bool,
     /// Chapter 4 - Golden Ridge A/B/C (Complete)
-    Chapter4,
-    /// Chapter 5 - Depths (A) / Central Chamber (B) (CP 1)
-    Chapter5Checkpoint1,
-    /// Chapter 5 - Unravelling (A) / Through The Mirror (B) (CP 2)
-    Chapter5Checkpoint2,
-    /// Chapter 5 - Search (A) / Mix Master (B) (CP 3)
-    Chapter5Checkpoint3,
-    /// Chapter 5 - Rescue (A) (CP 4)
-    Chapter5Checkpoint4,
+    pub chapter4: bool,
     /// Chapter 5 - Mirror Temple A/B/C (Complete)
-    Chapter5,
-    /// Chapter 6 - Lake (A) / Reflection (B) (CP 1)
-    Chapter6Checkpoint1,
-    /// Chapter 6 - Hollows (A) / Rock Bottom (B) (CP 2)
-    Chapter6Checkpoint2,
-    /// Chapter 6 - Reflection (A) / Reprieve (B) (CP 3)
-    Chapter6Checkpoint3,
-    /// Chapter 6 - Rock Bottom (A) (CP 4)
-    Chapter6Checkpoint4,
-    /// Chapter 6 - Resolution (A) (CP 5)
-    Chapter6Checkpoint5,
+    pub chapter5: bool,
     /// Chapter 6 - Reflection A/B/C (Complete)
-    Chapter6,
-    /// Chapter 7 - 500M (A) / 500M (B) (CP 1)
-    Chapter7Checkpoint1,
-    /// Chapter 7 - 1000M (A) / 1000M (B) (CP 2)
-    Chapter7Checkpoint2,
-    /// Chapter 7 - 1500M (A) / 1500M (B) (CP 3)
-    Chapter7Checkpoint3,
-    /// Chapter 7 - 2000M (A) / 2000M (B) (CP 4)
-    Chapter7Checkpoint4,
-    /// Chapter 7 - 2500M (A) / 2500M (B) (CP 5)
-    Chapter7Checkpoint5,
-    /// Chapter 7 - 3000M (A) / 3000M (B) (CP 6)
-    Chapter7Checkpoint6,
+    pub chapter6: bool,
     /// Chapter 7 - The Summit A/B/C (Complete)
-    Chapter7,
+    pub chapter7: bool,
     /// Epilogue (Complete)
-    Epilogue,
-    /// Chapter 8 - Into The Core (A) / Into The Core (B) (CP 1)
-    Chapter8Checkpoint1,
-    /// Chapter 8 - Hot And Cold (A) / Burning Or Freezing (B) (CP 2)
-    Chapter8Checkpoint2,
-    /// Chapter 8 - Heart Of The Mountain (A) / Heartbeat (B) (CP 3)
-    Chapter8Checkpoint3,
+    pub epilogue: bool,
     /// Chapter 8 - Core A/B/C (Complete)
-    Chapter8,
+    pub chapter8: bool,
+
+    /// Checkpoint Splits
+    _checkpoint_splits: Title,
+    /// Chapter 1 - Crossing (A) / Contraption (B) (CP 1)
+    pub chapter1_checkpoint1: bool,
+    /// Chapter 1 - Chasm (A) / Scrap Pit (B) (CP 2)
+    pub chapter1_checkpoint2: bool,
+    /// Chapter 2 - Intervention (A) / Combination Lock (B) (CP 1)
+    pub chapter2_checkpoint1: bool,
+    /// Chapter 2 - Awake (A) / Dream Altar (B) (CP 2)
+    pub chapter2_checkpoint2: bool,
+    /// Chapter 3 - Huge Mess (A) / Staff Quarters (B) (CP 1)
+    pub chapter3_checkpoint1: bool,
+    /// Chapter 3 - Elevator Shaft (A) / Library (B) (CP 2)
+    pub chapter3_checkpoint2: bool,
+    /// Chapter 3 - Presidential Suite (A) / Rooftop (B) (CP 3)
+    pub chapter3_checkpoint3: bool,
+    /// Chapter 4 - Shrine (A) / Stepping Stones (B) (CP 1)
+    pub chapter4_checkpoint1: bool,
+    /// Chapter 4 - Old Trail (A) / Gusty Canyon (B) (CP 2)
+    pub chapter4_checkpoint2: bool,
+    /// Chapter 4 - Cliff Face (A) / Eye Of The Storm (B) (CP 3)
+    pub chapter4_checkpoint3: bool,
+    /// Chapter 5 - Depths (A) / Central Chamber (B) (CP 1)
+    pub chapter5_checkpoint1: bool,
+    /// Chapter 5 - Unravelling (A) / Through The Mirror (B) (CP 2)
+    pub chapter5_checkpoint2: bool,
+    /// Chapter 5 - Search (A) / Mix Master (B) (CP 3)
+    pub chapter5_checkpoint3: bool,
+    /// Chapter 5 - Rescue (A) (CP 4)
+    pub chapter5_checkpoint4: bool,
+    /// Chapter 6 - Lake (A) / Reflection (B) (CP 1)
+    pub chapter6_checkpoint1: bool,
+    /// Chapter 6 - Hollows (A) / Rock Bottom (B) (CP 2)
+    pub chapter6_checkpoint2: bool,
+    /// Chapter 6 - Reflection (A) / Reprieve (B) (CP 3)
+    pub chapter6_checkpoint3: bool,
+    /// Chapter 6 - Rock Bottom (A) (CP 4)
+    pub chapter6_checkpoint4: bool,
+    /// Chapter 6 - Resolution (A) (CP 5)
+    pub chapter6_checkpoint5: bool,
+    /// Chapter 7 - 500M (A) / 500M (B) (CP 1)
+    pub chapter7_checkpoint1: bool,
+    /// Chapter 7 - 1000M (A) / 1000M (B) (CP 2)
+    pub chapter7_checkpoint2: bool,
+    /// Chapter 7 - 1500M (A) / 1500M (B) (CP 3)
+    pub chapter7_checkpoint3: bool,
+    /// Chapter 7 - 2000M (A) / 2000M (B) (CP 4)
+    pub chapter7_checkpoint4: bool,
+    /// Chapter 7 - 2500M (A) / 2500M (B) (CP 5)
+    pub chapter7_checkpoint5: bool,
+    /// Chapter 7 - 3000M (A) / 3000M (B) (CP 6)
+    pub chapter7_checkpoint6: bool,
+    /// Chapter 8 - Into The Core (A) / Into The Core (B) (CP 1)
+    pub chapter8_checkpoint1: bool,
+    /// Chapter 8 - Hot And Cold (A) / Burning Or Freezing (B) (CP 2)
+    pub chapter8_checkpoint2: bool,
+    /// Chapter 8 - Heart Of The Mountain (A) / Heartbeat (B) (CP 3)
+    pub chapter8_checkpoint3: bool,
+
+    /// Collectable Splits
+    _collectable_splits: Title,
     /// Chapter 1 - Cassette (Pickup)
-    Chapter1Cassette,
+    pub chapter1_cassette: bool,
     /// Chapter 1 - Heart Gem A/B/C (Pickup)
-    Chapter1HeartGem,
+    pub chapter1_heartgem: bool,
     /// Chapter 2 - Cassette (Pickup)
-    Chapter2Cassette,
+    pub chapter2_cassette: bool,
     /// Chapter 2 - Heart Gem A/B/C (Pickup)
-    Chapter2HeartGem,
+    pub chapter2_heartgem: bool,
     /// Chapter 3 - Cassette (Pickup)
-    Chapter3Cassette,
+    pub chapter3_cassette: bool,
     /// Chapter 3 - Heart Gem A/B/C (Pickup)
-    Chapter3HeartGem,
+    pub chapter3_heartgem: bool,
     /// Chapter 4 - Cassette (Pickup)
-    Chapter4Cassette,
+    pub chapter4_cassette: bool,
     /// Chapter 4 - Heart Gem A/B/C (Pickup)
-    Chapter4HeartGem,
+    pub chapter4_heartgem: bool,
     /// Chapter 5 - Cassette (Pickup)
-    Chapter5Cassette,
+    pub chapter5_cassette: bool,
     /// Chapter 5 - Heart Gem A/B/C (Pickup)
-    Chapter5HeartGem,
+    pub chapter5_heartgem: bool,
     /// Chapter 6 - Cassette (Pickup)
-    Chapter6Cassette,
+    pub chapter6_cassette: bool,
     /// Chapter 6 - Heart Gem A/B/C (Pickup)
-    Chapter6HeartGem,
+    pub chapter6_heartgem: bool,
     /// Chapter 7 - Cassette (Pickup)
-    Chapter7Cassette,
+    pub chapter7_cassette: bool,
     /// Chapter 7 - Heart Gem A/B/C (Pickup)
-    Chapter7HeartGem,
+    pub chapter7_heartgem: bool,
     /// Chapter 8 - Cassette (Pickup)
-    Chapter8Cassette,
+    pub chapter8_cassette: bool,
     /// Chapter 8 - Heart Gem A/B/C (Pickup)
-    Chapter8HeartGem,
+    pub chapter8_heartgem: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
