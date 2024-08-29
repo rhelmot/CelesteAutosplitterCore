@@ -14,4 +14,4 @@ Compiling
 - Install the rust compiler
 - Install the rust compiler plugin for building wasm files
 - `cargo build --release --target wasm32-unknown-unknown`
-- The result file should be `target/release/celeste_autosplitter.wasm`
+- The result file should be `target/wasm32-unknown-unknown/release/celeste_autosplitter.wasm`
