@@ -311,6 +311,7 @@ fn should_split(state: &mut Celeste) -> bool {
     should_split |= state.settings.chapter7 && state.chapter_split(area_id, Area::TheSummit, &level_name, completed, lt);
     should_split |= state.settings.epilogue && state.chapter_split(area_id, Area::Epilogue, &level_name, completed, lt);
     should_split |= state.settings.chapter8 && state.chapter_split(area_id, Area::Core, &level_name, completed, lt);
+    should_split |= state.settings.chapter9 && state.chapter_split(area_id, Area::Farewell, &level_name, completed, lt);
     should_split |= state.settings.chapter1_checkpoint1 && area_id == Area::ForsakenCity as i32
                 && level_name
                     == if state.area_difficulty() == AreaMode::ASide as i32 {
@@ -423,6 +424,14 @@ fn should_split(state: &mut Celeste) -> bool {
                     } else {
                         &"c-01"[..]
                     };
+    should_split |= state.settings.chapter9_checkpoint1 && area_id == Area::Farewell as i32 && level_name == "a-00";
+    should_split |= state.settings.chapter9_checkpoint2 && area_id == Area::Farewell as i32 && level_name == "c-00";
+    should_split |= state.settings.chapter9_checkpoint3 && area_id == Area::Farewell as i32 && level_name == "e-00z";
+    should_split |= state.settings.chapter9_checkpoint4 && area_id == Area::Farewell as i32 && level_name == "f-door";
+    should_split |= state.settings.chapter9_checkpoint5 && area_id == Area::Farewell as i32 && level_name == "h-00b";
+    should_split |= state.settings.chapter9_checkpoint6 && area_id == Area::Farewell as i32 && level_name == "i-00";
+    should_split |= state.settings.chapter9_checkpoint7 && area_id == Area::Farewell as i32 && level_name == "j-00";
+    should_split |= state.settings.chapter9_checkpoint8 && area_id == Area::Farewell as i32 && level_name == "j-16";
 
     state.last_completed = completed;
 

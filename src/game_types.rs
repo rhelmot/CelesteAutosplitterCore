@@ -38,6 +38,8 @@ pub struct Settings {
     pub epilogue: bool,
     /// Chapter 8 - Core A/B/C (Complete)
     pub chapter8: bool,
+    /// Chapter 9 - Farewell (Complete)
+    pub chapter9: bool,
 
     /// Checkpoint Splits
     _checkpoint_splits: Title,
@@ -97,6 +99,22 @@ pub struct Settings {
     pub chapter8_checkpoint2: bool,
     /// Chapter 8 - Heart Of The Mountain (A) / Heartbeat (B) (CP 3)
     pub chapter8_checkpoint3: bool,
+    /// Chapter 9 - Singular (CP 1)
+    pub chapter9_checkpoint1: bool,
+    /// Chapter 9 - Power Source (CP 2)
+    pub chapter9_checkpoint2: bool,
+    /// Chapter 9 - Remembered (CP 3)
+    pub chapter9_checkpoint3: bool,
+    /// Chapter 9 - Event Horizon (CP 4)
+    pub chapter9_checkpoint4: bool,
+    /// Chapter 9 - Determination (CP 5)
+    pub chapter9_checkpoint5: bool,
+    /// Chapter 9 - Stubbornness (CP 6)
+    pub chapter9_checkpoint6: bool,
+    /// Chapter 9 - Reconciliation (CP 7)
+    pub chapter9_checkpoint7: bool,
+    /// Chapter 9 - Farewell (CP 8)
+    pub chapter9_checkpoint8: bool,
 
     /// Collectable Splits
     _collectable_splits: Title,
@@ -148,6 +166,7 @@ pub enum Area {
     TheSummit = 7,
     Epilogue = 8,
     Core = 9,
+    Farewell = 10,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
